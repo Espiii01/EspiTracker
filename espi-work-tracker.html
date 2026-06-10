@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<meta name="theme-color" content="#080c14"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-title" content="Espi Work Tracker"/>
+<title>Espi Work Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --accent:#38bdf8;--accent2:#0ea5e9;--accent-dim:#0c4a6e;--accent-glow:rgba(56,189,248,.13);
+  --bg:#080c14;--bg3:#111827;--surface:#0f172a;
+  --border:#1e2d45;--border2:#263a52;
+  --text:#cdd6f4;--text2:#7a8fb5;--text3:#3d5068;
+  --green:#4ade80;--red:#f87171;
+}
+body{background:var(--bg);font-family:'DM Mono',monospace;color:var(--text);min-height:100vh;}
+input,textarea,select{background:var(--bg3);border:1px solid var(--border);color:var(--text);font-family:'DM Mono',monospace;font-size:14px;border-radius:8px;padding:10px 14px;outline:none;width:100%;transition:border-color .2s,box-shadow .2s;}
+input:focus,textarea:focus,select:focus{border-color:var(--accent-dim);box-shadow:0 0 0 3px rgba(56,189,248,.07);}
+input::placeholder,textarea::placeholder{color:var(--text3);}
+button{cursor:pointer;font-family:'DM Mono',monospace;}
+.btn-main{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#020c18;border:none;border-radius:8px;padding:12px 24px;font-size:13px;font-weight:500;letter-spacing:.04em;transition:opacity .2s,transform .15s;box-shadow:0 0 14px rgba(56,189,248,.2);}
+.btn-main:hover{opacity:.9;transform:translateY(-1px);}
+.btn-ghost{background:transparent;color:var(--text2);border:1px solid var(--border);border-radius:8px;padding:10px 20px;font-size:13px;transition:border-color .2s,color .2s,background .2s;}
+.btn-ghost:hover{border-color:var(--accent-dim);color:var(--accent);background:var(--accent-glow);}
+.btn-danger{background:transparent;color:var(--red);border:1px solid rgba(248,113,113,.2);border-radius:8px;padding:6px 14px;font-size:12px;transition:background .2s;}
+.btn-danger:hover{background:rgba(248,113,113,.08);}
+.btn-edit{background:transparent;color:var(--text3);border:1px solid var(--border);border-radius:8px;padding:6px 14px;font-size:12px;transition:all .2s;}
+.btn-edit:hover{border-color:var(--accent-dim);color:var(--accent);}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:20px;margin-bottom:16px;}
+.accent-line{width:28px;height:2px;background:linear-gradient(90deg,var(--accent),transparent);margin:6px 0 14px;}
+.tag{font-size:11px;padding:2px 8px;border-radius:5px;background:rgba(56,189,248,.08);color:var(--accent);border:1px solid rgba(56,189,248,.14);}
+.tag-tip{background:rgba(74,222,128,.07);color:var(--green);border-color:rgba(74,222,128,.18);}
+.entry-row{border-bottom:1px solid var(--border);padding:14px 0;display:flex;gap:12px;align-items:flex-start;}
+.entry-row:last-child{border-bottom:none;}
+.notif{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface);border:1px solid var(--accent-dim);color:var(--accent);font-size:13px;padding:10px 22px;border-radius:10px;z-index:999;animation:fadeup .3s ease;pointer-events:none;white-space:nowrap;display:none;}
+.notif.error{border-color:rgba(248,113,113,.4);color:var(--red);}
+.notif.show{display:block;}
+@keyframes fadeup{from{opacity:0;transform:translateX(-50%) translateY(10px);}to{opacity:1;transform:translateX(-50%) translateY(0);}}
+.month-bar-bg{background:var(--bg3);border-radius:3px;height:4px;overflow:hidden;margin-top:6px;}
+.month-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent-dim),var(--accent));border-radius:3px;transition:width .6s ease;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:none;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(5px);}
+.modal-overlay.show{display:flex;}
+.modal-box{background:var(--surface);border:1px solid var(--border2);border-radius:16px;padding:24px;width:100%;max-width:440px;max-height:90vh;overflow-y:auto;}
+/* Header */
+.header{border-bottom:1px solid #0d1e30;padding:13px 20px;display:flex;align-items:center;justify-content:space-between;background:rgba(8,12,20,.96);position:sticky;top:0;z-index:100;backdrop-filter:blur(12px);}
+.logo-box{width:30px;height:30px;border-radius:8px;background:linear-gradient(135deg,#38bdf8,#0369a1);display:flex;align-items:center;justify-content:center;font-weight:500;font-size:14px;color:#020c18;box-shadow:0 0 10px rgba(56,189,248,.25);flex-shrink:0;}
+.nav-btn{background:transparent;border:none;color:var(--text3);font-size:11px;letter-spacing:.08em;padding:8px 14px;border-radius:8px;transition:color .2s,background .2s;text-transform:uppercase;}
+.nav-btn.active{color:var(--accent);background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.14);}
+.nav-btn:hover{color:var(--text);}
+/* Content */
+.content{max-width:720px;margin:0 auto;padding:28px 20px 80px;}
+/* Stats grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:16px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:16px;}
+.stat-num{font-size:22px;color:var(--text);letter-spacing:-.02em;font-weight:400;}
+.stat-label{font-size:10px;color:var(--text3);letter-spacing:.12em;text-transform:uppercase;margin-top:5px;}
+/* Calendar */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-cell{border-radius:7px;border:1px solid #1a2535;aspect-ratio:1;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;transition:all .15s;position:relative;padding:2px;}
+.cal-cell:hover{border-color:var(--accent-dim);}
+.cal-header-cell{text-align:center;font-size:9px;color:var(--text3);letter-spacing:.08em;padding:3px 0;}
+/* Shift buttons */
+.shift-row{display:flex;gap:10px;}
+.shift-btn{flex:1;border:1px solid var(--border);border-radius:12px;background:var(--bg3);color:var(--text2);padding:14px 10px;display:flex;flex-direction:column;align-items:center;gap:6px;transition:all .2s;cursor:pointer;}
+.shift-btn:hover{border-color:var(--accent-dim);color:var(--text);}
+.shift-btn.selected{border-color:var(--accent);background:rgba(56,189,248,.08);color:var(--accent);}
+/* Modal tabs */
+.modal-tabs{display:flex;gap:4px;margin-bottom:18px;border-bottom:1px solid #1e2d45;padding-bottom:12px;flex-wrap:wrap;}
+.modal-tab{background:transparent;border:1px solid #1e2d45;color:var(--text2);border-radius:7px;padding:5px 11px;font-size:11px;cursor:pointer;transition:all .15s;}
+.modal-tab.active{background:rgba(56,189,248,.1);border-color:rgba(56,189,248,.3);color:var(--accent);}
+/* Views */
+.view{display:none;}
+.view.active{display:block;}
+/* 2col grid */
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px;margin-bottom:16px;}
+/* Upcoming reminders */
+.reminder-item{display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;padding:10px 12px;border-radius:8px;}
+@media(max-width:700px){
+  .nav-btn{font-size:10px;padding:6px 8px;}
+  .card{padding:14px;}
+  .stat-num{font-size:18px;}
+  .shift-row{flex-wrap:wrap;}
+  .shift-btn{min-width:calc(50% - 5px);}
+}
+@media(max-width:420px){.nav-btn{font-size:9px;padding:5px 6px;}}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px;}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="header">
+  <div style="display:flex;align-items:center;gap:10px;">
+    <div class="logo-box">E</div>
+    <div>
+      <div style="font-size:12px;font-weight:500;color:#e2e8f0;letter-spacing:.1em;">ESPI WORK TRACKER</div>
+      <div style="font-size:8px;color:#3d5068;letter-spacing:.18em;margin-top:1px;">EARNINGS LOG</div>
+    </div>
+  </div>
+  <div style="display:flex;gap:4px;">
+    <button class="nav-btn active" onclick="showView('dashboard')">INICIO</button>
+    <button class="nav-btn" onclick="showView('add')">+ LOG</button>
+    <button class="nav-btn" onclick="showView('history')">HISTORIAL</button>
+    <button class="nav-btn" onclick="showView('stats')">STATS</button>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- DASHBOARD -->
+  <div id="view-dashboard" class="view active">
+    <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:24px;flex-wrap:wrap;gap:8px;">
+      <div>
+        <div id="today-weekday" style="font-size:10px;color:#3d5068;letter-spacing:.2em;text-transform:uppercase;margin-bottom:5px;"></div>
+        <div id="today-date" style="font-size:26px;font-weight:500;color:#38bdf8;letter-spacing:-.01em;line-height:1;text-shadow:0 0 24px rgba(56,189,248,.35);"></div>
+      </div>
+      <button class="btn-main" style="font-size:12px;padding:10px 18px;" onclick="showView('add')">+ Nueva jornada</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-grid" id="stats-grid"></div>
+
+    <!-- Upcoming reminders -->
+    <div id="upcoming-reminders-card" class="card" style="border-color:rgba(251,191,36,.2);background:rgba(251,191,36,.03);display:none;">
+      <div style="font-size:11px;color:#fbbf24;margin-bottom:4px;letter-spacing:.1em;">🔔 AVISOS PRÓXIMOS</div>
+      <div style="width:28px;height:2px;background:linear-gradient(90deg,#fbbf24,transparent);margin:6px 0 14px;"></div>
+      <div id="upcoming-reminders-list"></div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="card">
+      <div style="font-size:11px;color:#38bdf8;margin-bottom:4px;letter-spacing:.1em;">CALENDARIO</div>
+      <div class="accent-line"></div>
+      <div id="calendar"></div>
+      <div style="display:flex;gap:14px;margin-top:12px;flex-wrap:wrap;" id="cal-legend"></div>
+    </div>
+
+    <!-- Recent -->
+    <div class="card">
+      <div style="font-size:11px;color:#38bdf8;margin-bottom:4px;letter-spacing:.1em;">ÚLTIMAS JORNADAS</div>
+      <div class="accent-line"></div>
+      <div id="recent-entries"></div>
+    </div>
+
+    <!-- Monthly -->
+    <div class="card" id="monthly-card" style="display:none;">
+      <div style="font-size:11px;color:#38bdf8;margin-bottom:4px;letter-spacing:.1em;">DESGLOSE MENSUAL</div>
+      <div class="accent-line"></div>
+      <div id="monthly-list"></div>
+    </div>
+  </div>
+
+  <!-- ADD/EDIT -->
+  <div id="view-add" class="view">
+    <div id="add-title" style="font-size:22px;font-weight:400;color:#e2e8f0;margin-bottom:24px;">Nueva <span style="color:#38bdf8;">jornada</span></div>
+    <div class="card" style="display:flex;flex-direction:column;gap:20px;">
+      <div>
+        <label style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px;">Fecha</label>
+        <input type="date" id="form-date"/>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:10px;">Turno trabajado</label>
+        <div class="shift-row" id="shift-row">
+          <button class="shift-btn" onclick="selectShift('day')">
+            <span style="font-size:20px;">☀️</span>
+            <span style="font-size:11px;">Turno Día</span>
+            <span style="font-size:10px;color:#3d5068;">10:00 – 17:00</span>
+            <span style="font-size:11px;color:#3d5068;">7h</span>
+          </button>
+          <button class="shift-btn" onclick="selectShift('night')">
+            <span style="font-size:20px;">🌙</span>
+            <span style="font-size:11px;">Turno Noche</span>
+            <span style="font-size:10px;color:#3d5068;">20:00 – 01:00</span>
+            <span style="font-size:11px;color:#3d5068;">5h</span>
+          </button>
+          <button class="shift-btn" onclick="selectShift('full')">
+            <span style="font-size:20px;">✦</span>
+            <span style="font-size:11px;">Día Completo</span>
+            <span style="font-size:10px;color:#3d5068;">10:00 – 01:00</span>
+            <span style="font-size:11px;color:#3d5068;">12h</span>
+          </button>
+        </div>
+        <div id="shift-preview" style="display:none;margin-top:10px;padding:9px 13px;background:rgba(56,189,248,.04);border-radius:8px;border:1px solid rgba(56,189,248,.1);font-size:12px;color:#7a8fb5;display:flex;gap:14px;flex-wrap:wrap;"></div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px;">Sueldo del día (€)</label>
+        <input type="number" id="form-base" min="0" step="1" placeholder="ej: 70" oninput="updatePreview()"/>
+        <div style="font-size:10px;color:#3d5068;margin-top:4px;">Lo que acordaste cobrar hoy</div>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px;">Propinas (€) — opcional</label>
+        <input type="number" id="form-tips" min="0" step="0.01" placeholder="ej: 25.00" oninput="updatePreview()"/>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px;">PB (€) — opcional</label>
+        <input type="number" id="form-pb" min="0" step="0.01" placeholder="ej: 50.00" oninput="updatePreview()"/>
+      </div>
+      <div>
+        <label style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px;">Notas — opcional</label>
+        <textarea id="form-notes" rows="2" placeholder="Boda en el hotel, turno doble..." style="resize:vertical;"></textarea>
+      </div>
+      <div style="display:flex;gap:10px;">
+        <button class="btn-main" style="flex:1;" onclick="handleAddOrEdit()" id="submit-btn">Añadir jornada</button>
+        <button class="btn-ghost" onclick="cancelAdd()">Cancelar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- HISTORY -->
+  <div id="view-history" class="view">
+    <div style="font-size:22px;color:#e2e8f0;margin-bottom:24px;">todas las <span style="color:#38bdf8;">jornadas</span></div>
+    <div class="card">
+      <div id="history-list"></div>
+    </div>
+  </div>
+
+  <!-- STATS -->
+  <div id="view-stats" class="view">
+    <div style="font-size:22px;color:#e2e8f0;margin-bottom:24px;">resumen de <span style="color:#38bdf8;">temporada</span></div>
+    <div class="grid-3" id="shift-breakdown"></div>
+    <div class="grid-2" id="stats-summary"></div>
+    <div id="best-shift-card"></div>
+    <div class="card" id="monthly-stats-card">
+      <div style="font-size:11px;color:#38bdf8;margin-bottom:4px;letter-spacing:.1em;">DESGLOSE MENSUAL</div>
+      <div class="accent-line"></div>
+      <div id="monthly-stats-list"></div>
+    </div>
+    <div class="card">
+      <div style="font-size:11px;color:#38bdf8;margin-bottom:4px;letter-spacing:.1em;">AJUSTES</div>
+      <div class="accent-line"></div>
+      <label style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;display:block;margin-bottom:6px;">Moneda</label>
+      <select id="currency-select" onchange="changeCurrency(this.value)" style="max-width:200px;">
+        <option value="€">€ Euro</option>
+        <option value="$">$ Dólar</option>
+        <option value="£">£ Libra</option>
+      </select>
+      <button class="btn-danger" style="margin-top:20px;width:100%;padding:10px;" onclick="clearAllData()">Borrar todos los datos</button>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<!-- DAY MODAL -->
+<div class="modal-overlay" id="day-modal" onclick="closeDayModal()">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;">
+      <div>
+        <div id="modal-tags-row" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:4px;min-height:16px;"></div>
+        <div id="modal-date-label" style="font-size:15px;color:#e2e8f0;line-height:1.3;"></div>
+      </div>
+      <button onclick="closeDayModal()" style="background:transparent;border:none;color:#3d5068;font-size:18px;padding:4px;flex-shrink:0;">✕</button>
+    </div>
+    <div class="modal-tabs" id="modal-tabs"></div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
+<!-- NOTIF -->
+<div class="notif" id="notif"></div>
+
+<script>
+// ─── DATA ────────────────────────────────────────────
+const STORAGE_KEY = 'espi_work_tracker';
+const SHIFTS = {
+  day:   { label:'Turno Día',    emoji:'☀️',  hours:7,  time:'10:00 – 17:00' },
+  night: { label:'Turno Noche',  emoji:'🌙',  hours:5,  time:'20:00 – 01:00' },
+  full:  { label:'Día Completo', emoji:'✦',   hours:12, time:'10:00 – 01:00' },
+};
+const WEEKDAY_ES = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+const MONTHS_ES  = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const DAY_TAGS   = ['🔥','⭐','💤','🎉','😤','🤒','🌧️','✈️','💪','🍺'];
+
+let state = { entries:[], dayData:{}, currency:'€' };
+let editId = null;
+let currentShift = null;
+let calYear  = new Date().getFullYear();
+let calMonth = new Date().getMonth();
+let modalDateStr = null;
+let modalTab = 'notes';
+let notifTimer = null;
+
+function genId() { return Math.random().toString(36).slice(2)+Date.now().toString(36); }
+
+function save() { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+
+function load() {
+  try {
+    const r = localStorage.getItem(STORAGE_KEY);
+    if (r) { state = JSON.parse(r); if (!state.dayData) state.dayData = {}; }
+  } catch(_){}
+}
+
+function shiftLabel(s) {
+  if (s==='full')  return '☀️🌙 Completo';
+  if (s==='day')   return '☀️ Día';
+  if (s==='night') return '🌙 Noche';
+  return s||'—';
+}
+
+function fmt(n) { return parseFloat(n||0).toFixed(2); }
+function fmtInt(n) { return parseFloat(n||0).toFixed(0); }
+
+// ─── NOTIFY ──────────────────────────────────────────
+function notify(msg, type='success') {
+  const el = document.getElementById('notif');
+  el.textContent = msg;
+  el.className = 'notif show' + (type==='error'?' error':'');
+  clearTimeout(notifTimer);
+  notifTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ─── VIEWS ───────────────────────────────────────────
+function showView(v) {
+  document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(el => el.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  const btns = document.querySelectorAll('.nav-btn');
+  const labels = {'dashboard':'INICIO','add':'+ LOG','history':'HISTORIAL','stats':'STATS'};
+  btns.forEach(b => { if(b.textContent.trim()===labels[v]) b.classList.add('active'); });
+  if(v==='dashboard') renderDashboard();
+  if(v==='history')   renderHistory();
+  if(v==='stats')     renderStats();
+  if(v==='add' && !editId) resetForm();
+}
+
+// ─── RENDER DASHBOARD ────────────────────────────────
+function renderDashboard() {
+  // Today
+  const now = new Date();
+  document.getElementById('today-weekday').textContent = now.toLocaleDateString('es-ES',{weekday:'long'});
+  document.getElementById('today-date').textContent    = now.toLocaleDateString('es-ES',{day:'numeric',month:'long',year:'numeric'});
+
+  const C = state.currency;
+  const total     = state.entries.reduce((s,e)=>s+(parseFloat(e.earned)||0),0);
+  const totalBase = state.entries.reduce((s,e)=>s+(parseFloat(e.base)||0),0);
+  const totalTips = state.entries.reduce((s,e)=>s+(parseFloat(e.tips)||0)+(parseFloat(e.pb)||0),0);
+  const totalH    = state.entries.reduce((s,e)=>s+(parseFloat(e.hours)||0),0);
+  const days      = state.entries.length;
+  const avg       = days?(total/days).toFixed(2):'0.00';
+  const best      = state.entries.reduce((b,e)=>(!b||parseFloat(e.earned)>parseFloat(b.earned)?e:b),null);
+
+  // Stats cards
+  const sg = document.getElementById('stats-grid');
+  sg.innerHTML = [
+    { label:'Sin propinas',   value:`${C}${fmtInt(totalBase)}`, sub:'sueldo base',      color:'#7a8fb5', border:'' },
+    { label:'Propinas',       value:`${C}${fmtInt(totalTips)}`, sub:'',                 color:'#4ade80', border:'rgba(74,222,128,.15)' },
+    { label:'Total acumulado',value:`${C}${fmtInt(total)}`,     sub:`${days} jornadas`, color:'#38bdf8', border:'rgba(56,189,248,.22)' },
+    { label:'Horas totales',  value:`${totalH}h`,               sub:`${days} días`,     color:'#7a8fb5', border:'' },
+    { label:'Media/jornada',  value:`${C}${avg}`,               sub:`mejor: ${C}${best?fmtInt(best.earned):'0'}`, color:'#7a8fb5', border:'' },
+  ].map(s=>`
+    <div class="stat-card" style="${s.border?`border-color:${s.border};`:''}">
+      <div class="stat-num" style="color:${s.color};">${s.value}</div>
+      <div class="stat-label">${s.label}</div>
+      ${s.sub?`<div style="font-size:9px;color:#3d5068;margin-top:5px;">${s.sub}</div>`:''}
+    </div>`).join('');
+
+  // Upcoming reminders
+  const today = new Date().toISOString().slice(0,10);
+  const upcoming = Object.entries(state.dayData||{}).flatMap(([date,dd])=>
+    (dd.reminders||[]).filter(r=>!r.done&&r.date>=today).map(r=>({...r,forDate:date}))
+  ).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,3);
+  const remCard = document.getElementById('upcoming-reminders-card');
+  const remList = document.getElementById('upcoming-reminders-list');
+  if(upcoming.length>0){
+    remCard.style.display='block';
+    remList.innerHTML = upcoming.map(r=>`
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid #1e2d45;">
+        <div>
+          <div style="font-size:13px;color:#cdd6f4;">${r.text}</div>
+          <div style="font-size:10px;color:#3d5068;margin-top:2px;">📅 ${r.date}${r.forDate!==r.date?` · (del día ${r.forDate})`:''}</div>
+        </div>
+        <button onclick="openDayModal('${r.forDate}')" style="background:rgba(56,189,248,.08);border:1px solid rgba(56,189,248,.2);color:#38bdf8;border-radius:6px;padding:4px 10px;font-size:11px;cursor:pointer;">ver</button>
+      </div>`).join('');
+  } else { remCard.style.display='none'; }
+
+  // Calendar
+  renderCalendar();
+
+  // Recent
+  const sorted = [...state.entries].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const re = document.getElementById('recent-entries');
+  if(sorted.length===0){
+    re.innerHTML='<div style="font-size:13px;color:#3d5068;padding:20px 0;text-align:center;">Sin jornadas. Toca un día del calendario →</div>';
+  } else {
+    re.innerHTML = sorted.slice(0,5).map(e=>{
+      const d = new Date(e.date+'T12:00:00');
+      return `<div class="entry-row" style="cursor:pointer;" onclick="openDayModal('${e.date}')">
+        <div style="text-align:center;min-width:36px;">
+          <div style="font-size:9px;color:#3d5068;">${WEEKDAY_ES[d.getDay()]}</div>
+          <div style="font-size:20px;color:#38bdf8;line-height:1;">${d.getDate()}</div>
+          <div style="font-size:9px;color:#3d5068;">${d.toLocaleDateString('es-ES',{month:'short'})}</div>
+        </div>
+        <div style="flex:1;">
+          <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:4px;">
+            <span style="font-size:15px;color:#cdd6f4;">${C}${fmt(e.earned)}</span>
+            <span class="tag">${shiftLabel(e.shift)}</span>
+            ${e.tips?`<span class="tag tag-tip">+${C}${e.tips} tips</span>`:''}
+            ${e.pb?`<span class="tag tag-tip">PB ${C}${e.pb}</span>`:''}
+            <span style="font-size:10px;color:#3d5068;">${e.hours}h</span>
+          </div>
+          ${e.notes?`<div style="font-size:11px;color:#7a8fb5;font-style:italic;">${e.notes}</div>`:''}
+        </div>
+      </div>`;
+    }).join('');
+    if(sorted.length>5){
+      re.innerHTML += `<button class="btn-ghost" style="margin-top:12px;width:100%;font-size:12px;" onclick="showView('history')">Ver todas (${sorted.length})</button>`;
+    }
+  }
+
+  // Monthly
+  const monthly = getMonthly();
+  const mc = document.getElementById('monthly-card');
+  if(monthly.length>0){
+    mc.style.display='block';
+    const maxE = Math.max(...monthly.map(m=>m.earned));
+    document.getElementById('monthly-list').innerHTML = monthly.slice(0,4).map(m=>`
+      <div style="margin-bottom:14px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
+          <span style="font-size:12px;color:#7a8fb5;text-transform:capitalize;">${m.month}</span>
+          <div>
+            <span style="font-size:13px;color:#cdd6f4;">${C}${m.earned.toFixed(2)}</span>
+            <span style="font-size:10px;color:#3d5068;margin-left:10px;">${m.days}d · ${m.hours}h</span>
+          </div>
+        </div>
+        <div class="month-bar-bg"><div class="month-bar-fill" style="width:${Math.min(100,(m.earned/(maxE||1))*100)}%;"></div></div>
+      </div>`).join('');
+  } else { mc.style.display='none'; }
+}
+
+// ─── CALENDAR ────────────────────────────────────────
+function renderCalendar() {
+  const today = new Date();
+  const firstDay    = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const C = state.currency;
+
+  const entryMap = {};
+  state.entries.forEach(e=>{ entryMap[e.date]=e; });
+
+  const monthEntries = state.entries.filter(e=>{
+    const d=new Date(e.date); return d.getFullYear()===calYear&&d.getMonth()===calMonth;
+  });
+  const maxE     = monthEntries.reduce((m,e)=>Math.max(m,parseFloat(e.earned)||0),0);
+  const mTotal   = monthEntries.reduce((s,e)=>s+(parseFloat(e.earned)||0),0);
+  const mHours   = monthEntries.reduce((s,e)=>s+(parseFloat(e.hours)||0),0);
+
+  let html = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <button onclick="calPrev()" style="background:transparent;border:1px solid #1e2d45;color:#7a8fb5;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:13px;">‹</button>
+      <div style="text-align:center;">
+        <div style="font-size:15px;color:#e2e8f0;letter-spacing:.05em;">${MONTHS_ES[calMonth]} <span style="color:#38bdf8;">${calYear}</span></div>
+        ${monthEntries.length>0?`<div style="font-size:10px;color:#3d5068;margin-top:3px;">${monthEntries.length} jornadas · ${mHours}h · <span style="color:#4ade80;">${C}${fmtInt(mTotal)}</span></div>`:''}
+      </div>
+      <button onclick="calNext()" style="background:transparent;border:1px solid #1e2d45;color:#7a8fb5;border-radius:8px;padding:5px 14px;cursor:pointer;font-size:13px;">›</button>
+    </div>
+    <div class="cal-grid" style="margin-bottom:4px;">
+      ${WEEKDAY_ES.map(d=>`<div class="cal-header-cell">${d}</div>`).join('')}
+    </div>
+    <div class="cal-grid">`;
+
+  for(let i=0;i<firstDay;i++) html+=`<div></div>`;
+  for(let day=1;day<=daysInMonth;day++){
+    const ds = `${calYear}-${String(calMonth+1).padStart(2,'0')}-${String(day).padStart(2,'0')}`;
+    const entry   = entryMap[ds];
+    const dd      = (state.dayData||{})[ds]||{};
+    const hasNote = !!dd.note;
+    const hasTags = dd.tags&&dd.tags.length>0;
+    const hasRem  = dd.reminders&&dd.reminders.some(r=>!r.done);
+    const isToday = today.getDate()===day&&today.getMonth()===calMonth&&today.getFullYear()===calYear;
+
+    let bg='transparent', textColor='#3d5068', borderColor='#1a2535', numColor='';
+    if(entry){
+      const pct = maxE>0?(parseFloat(entry.earned)||0)/maxE:0;
+      if(pct>0.75)      {bg='rgba(74,222,128,.2)'; textColor='#4ade80'; borderColor='rgba(74,222,128,.35)';}
+      else if(pct>0.4)  {bg='rgba(56,189,248,.14)';textColor='#38bdf8'; borderColor='rgba(56,189,248,.25)';}
+      else              {bg='rgba(56,189,248,.06)'; textColor='#7ab8d4'; borderColor='rgba(56,189,248,.12)';}
+    } else if(hasNote||hasTags||hasRem){
+      bg='rgba(255,255,255,.03)';borderColor='#263a52';textColor='#7a8fb5';
+    }
+    numColor = entry?textColor:(isToday?'#38bdf8':textColor);
+
+    const indicators = (hasNote||hasTags||hasRem)?`
+      <div style="position:absolute;bottom:2px;right:2px;display:flex;gap:1px;">
+        ${hasNote?`<div style="width:4px;height:4px;border-radius:50%;background:#38bdf8;opacity:.7;"></div>`:''}
+        ${hasRem?`<div style="width:4px;height:4px;border-radius:50%;background:#fbbf24;opacity:.9;"></div>`:''}
+        ${hasTags?`<div style="width:4px;height:4px;border-radius:50%;background:#c084fc;opacity:.7;"></div>`:''}
+      </div>`:'';
+    const tagEmoji = hasTags&&dd.tags[0]?`<div style="font-size:7px;line-height:1;margin-top:1px;">${dd.tags[0]}</div>`:'';
+
+    html+=`<div class="cal-cell" style="background:${bg};border-color:${borderColor};${isToday?'outline:2px solid rgba(56,189,248,.45);':''}"
+      onclick="openDayModal('${ds}')">
+      <div style="font-size:10px;color:${numColor};font-weight:${entry||isToday?500:400};line-height:1;opacity:${entry?.7:1};">${day}</div>
+      ${entry?`<div style="font-size:11px;color:${textColor};margin-top:2px;font-weight:500;letter-spacing:-.01em;">${C}${fmtInt(entry.earned)}</div>`:''}
+      ${tagEmoji}
+      ${indicators}
+    </div>`;
+  }
+  html+=`</div>`;
+  document.getElementById('calendar').innerHTML = html;
+
+  // Legend
+  document.getElementById('cal-legend').innerHTML = [
+    {color:'rgba(74,222,128,.5)',label:'mejor día',dot:false},
+    {color:'rgba(56,189,248,.5)',label:'trabajado',dot:false},
+    {color:'#38bdf8',label:'nota',dot:true},
+    {color:'#fbbf24',label:'aviso',dot:true},
+    {color:'#c084fc',label:'tag',dot:true},
+  ].map(l=>`<div style="display:flex;align-items:center;gap:5px;">
+    <div style="width:${l.dot?6:10}px;height:${l.dot?6:10}px;border-radius:${l.dot?'50%':'2px'};background:${l.color};opacity:.8;"></div>
+    <span style="font-size:9px;color:#3d5068;">${l.label}</span>
+  </div>`).join('');
+}
+
+function calPrev(){ if(calMonth===0){calMonth=11;calYear--;} else calMonth--; renderCalendar(); }
+function calNext(){ if(calMonth===11){calMonth=0;calYear++;} else calMonth++; renderCalendar(); }
+
+// ─── DAY MODAL ───────────────────────────────────────
+function openDayModal(dateStr){
+  modalDateStr = dateStr;
+  const entry = state.entries.find(e=>e.date===dateStr)||null;
+  const dd    = (state.dayData||{})[dateStr]||{};
+  const d     = new Date(dateStr+'T12:00:00');
+  const isToday = new Date().toISOString().slice(0,10)===dateStr;
+
+  // Tags row
+  const tr = document.getElementById('modal-tags-row');
+  tr.innerHTML = (isToday?`<span style="font-size:9px;background:rgba(56,189,248,.15);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:4px;padding:1px 6px;letter-spacing:.08em;">HOY</span>`:'')
+    + (dd.tags||[]).map(t=>`<span style="font-size:13px;">${t}</span>`).join('');
+
+  // Date label
+  document.getElementById('modal-date-label').textContent = d.toLocaleDateString('es-ES',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // Tabs
+  const tabs = [
+    ...(entry?[{id:'shift',label:'💰 Jornada'}]:[]),
+    {id:'notes',label:'📝 Notas'},
+    {id:'reminders',label:`🔔 Avisos${(dd.reminders||[]).filter(r=>!r.done).length?` (${(dd.reminders||[]).filter(r=>!r.done).length})`:''}`},
+    {id:'tags',label:'🏷️ Tags'},
+  ];
+  if(!entry && modalTab==='shift') modalTab='notes';
+  document.getElementById('modal-tabs').innerHTML = tabs.map(t=>
+    `<button class="modal-tab${modalTab===t.id?' active':''}" onclick="switchModalTab('${t.id}')">${t.label}</button>`
+  ).join('');
+
+  renderModalContent();
+  document.getElementById('day-modal').classList.add('show');
+}
+
+function closeDayModal(){ document.getElementById('day-modal').classList.remove('show'); }
+
+function switchModalTab(tab){
+  modalTab=tab;
+  document.querySelectorAll('.modal-tab').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.modal-tab').forEach(b=>{ if(b.textContent.startsWith(tab==='shift'?'💰':tab==='notes'?'📝':tab==='reminders'?'🔔':'🏷️')) b.classList.add('active'); });
+  renderModalContent();
+}
+
+function renderModalContent(){
+  const C = state.currency;
+  const entry = state.entries.find(e=>e.date===modalDateStr)||null;
+  const dd    = (state.dayData||{})[modalDateStr]||{};
+  const isPast = new Date(modalDateStr+'T23:59:59')<new Date();
+  const mc = document.getElementById('modal-content');
+
+  if(modalTab==='shift' && entry){
+    mc.innerHTML = `
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;">
+        ${[
+          {label:'TOTAL',value:`${C}${fmt(entry.earned)}`,color:'#4ade80',big:true},
+          {label:'SUELDO BASE',value:`${C}${fmt(entry.base)}`,color:'#cdd6f4'},
+          ...(entry.tips?[{label:'PROPINAS',value:`+${C}${fmt(entry.tips)}`,color:'#4ade80'}]:[]),
+          ...(entry.pb?[{label:'PB',value:`+${C}${fmt(entry.pb)}`,color:'#4ade80'}]:[]),
+          {label:'TURNO',value:`${shiftLabel(entry.shift)} · ${entry.hours}h`,color:'#7a8fb5'},
+        ].map(r=>`<div style="display:flex;justify-content:space-between;align-items:center;">
+          <span style="font-size:10px;color:#3d5068;letter-spacing:.1em;">${r.label}</span>
+          <span style="font-size:${r.big?22:13}px;color:${r.color};">${r.value}</span>
+        </div>`).join('')}
+        ${entry.notes?`<div style="background:rgba(56,189,248,.04);border:1px solid rgba(56,189,248,.1);border-radius:8px;padding:8px 12px;font-size:12px;color:#7a8fb5;font-style:italic;">${entry.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn-main" style="flex:1;font-size:12px;padding:10px;" onclick="editFromModal()">Editar jornada</button>
+        <button class="btn-danger" onclick="deleteFromModal('${entry.id}')">Eliminar</button>
+      </div>`;
+  }
+
+  else if(modalTab==='notes'){
+    mc.innerHTML = `
+      <div style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;">Nota del día</div>
+      <textarea id="modal-note" rows="5" placeholder="¿Qué pasó hoy? Apuntes, lo que sea..." style="resize:vertical;margin-bottom:10px;">${dd.note||''}</textarea>
+      <button class="btn-main" style="width:100%;font-size:12px;padding:10px;margin-bottom:8px;" onclick="saveNote()">Guardar nota</button>
+      ${!entry?`<button class="btn-ghost" style="width:100%;font-size:12px;padding:10px;" onclick="addFromModal()">${isPast?'+ Registrar jornada pasada':'+ Añadir jornada a este día'}</button>`:''}`;
+  }
+
+  else if(modalTab==='reminders'){
+    const rems = dd.reminders||[];
+    mc.innerHTML = `
+      <div style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;">Avisos / Recordatorios</div>
+      ${rems.length===0?'<div style="font-size:13px;color:#3d5068;text-align:center;padding:16px 0;">Sin avisos para este día</div>':''}
+      ${rems.map(r=>`
+        <div class="reminder-item" style="background:${r.done?'rgba(74,222,128,.04)':'rgba(56,189,248,.04)'};border:1px solid ${r.done?'rgba(74,222,128,.15)':'rgba(56,189,248,.1)'};">
+          <input type="checkbox" ${r.done?'checked':''} onchange="toggleReminder('${r.id}')" style="margin-top:2px;accent-color:#38bdf8;width:14px;height:14px;flex-shrink:0;">
+          <div style="flex:1;">
+            <div style="font-size:13px;color:${r.done?'#3d5068':'#cdd6f4'};text-decoration:${r.done?'line-through':'none'};">${r.text}</div>
+            ${r.date!==modalDateStr?`<div style="font-size:10px;color:#3d5068;margin-top:2px;">📅 ${r.date}</div>`:''}
+          </div>
+          <button onclick="deleteReminder('${r.id}')" style="background:transparent;border:none;color:#3d5068;font-size:14px;padding:2px;cursor:pointer;">✕</button>
+        </div>`).join('')}
+      <div id="add-reminder-form" style="display:none;background:rgba(56,189,248,.04);border:1px solid rgba(56,189,248,.1);border-radius:10px;padding:14px;margin-bottom:10px;">
+        <input id="rem-text" placeholder="Descripción del aviso..." style="margin-bottom:8px;" onkeydown="if(event.key==='Enter')addReminder()">
+        <label style="font-size:10px;color:#3d5068;letter-spacing:.08em;display:block;margin-bottom:4px;">FECHA DEL AVISO</label>
+        <input type="date" id="rem-date" style="margin-bottom:10px;" value="${modalDateStr}">
+        <div style="display:flex;gap:8px;">
+          <button class="btn-main" style="flex:1;font-size:12px;padding:9px;" onclick="addReminder()">Añadir</button>
+          <button class="btn-ghost" style="font-size:12px;padding:9px;" onclick="document.getElementById('add-reminder-form').style.display='none';document.getElementById('show-rem-form-btn').style.display='block';">Cancelar</button>
+        </div>
+      </div>
+      <button id="show-rem-form-btn" class="btn-ghost" style="width:100%;font-size:12px;padding:10px;" onclick="document.getElementById('add-reminder-form').style.display='block';this.style.display='none';setTimeout(()=>document.getElementById('rem-text').focus(),50)">+ Nuevo aviso</button>`;
+  }
+
+  else if(modalTab==='tags'){
+    const tags = dd.tags||[];
+    mc.innerHTML = `
+      <div style="font-size:10px;color:#3d5068;letter-spacing:.1em;text-transform:uppercase;margin-bottom:12px;">Etiquetas del día</div>
+      <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+        ${DAY_TAGS.map(tag=>`
+          <button onclick="toggleTag('${tag}')" style="font-size:22px;background:${tags.includes(tag)?'rgba(56,189,248,.12)':'rgba(255,255,255,.03)'};border:2px solid ${tags.includes(tag)?'#38bdf8':'#1e2d45'};border-radius:10px;padding:8px 12px;cursor:pointer;transition:all .15s;transform:${tags.includes(tag)?'scale(1.1)':'scale(1)'};">${tag}</button>`).join('')}
+      </div>
+      ${tags.length>0?`<div style="font-size:12px;color:#7a8fb5;margin-bottom:12px;">Seleccionados: ${tags.join('  ')}</div>`:''}
+      <button class="btn-ghost" style="width:100%;font-size:12px;padding:10px;" onclick="clearTags()">Limpiar etiquetas</button>`;
+  }
+}
+
+// Modal actions
+function editFromModal(){
+  const entry = state.entries.find(e=>e.date===modalDateStr);
+  if(!entry) return;
+  editId = entry.id;
+  document.getElementById('add-title').innerHTML = 'Editar jornada';
+  document.getElementById('submit-btn').textContent = 'Guardar cambios';
+  document.getElementById('form-date').value  = entry.date;
+  document.getElementById('form-base').value  = entry.base||'';
+  document.getElementById('form-tips').value  = entry.tips||'';
+  document.getElementById('form-pb').value    = entry.pb||'';
+  document.getElementById('form-notes').value = entry.notes||'';
+  selectShift(entry.shift);
+  closeDayModal();
+  showView('add');
+}
+
+function deleteFromModal(id){
+  if(!window.confirm('¿Eliminar jornada?')) return;
+  state.entries = state.entries.filter(e=>e.id!==id);
+  save(); closeDayModal(); notify('Jornada eliminada'); renderDashboard();
+}
+
+function addFromModal(){
+  document.getElementById('form-date').value = modalDateStr;
+  closeDayModal();
+  showView('add');
+}
+
+function saveNote(){
+  const note = document.getElementById('modal-note').value;
+  if(!state.dayData) state.dayData={};
+  if(!state.dayData[modalDateStr]) state.dayData[modalDateStr]={};
+  state.dayData[modalDateStr].note = note;
+  save(); notify('Nota guardada ✓'); renderCalendar();
+}
+
+function toggleReminder(id){
+  const dd = state.dayData[modalDateStr];
+  if(!dd) return;
+  dd.reminders = dd.reminders.map(r=>r.id===id?{...r,done:!r.done}:r);
+  save(); renderModalContent(); renderCalendar(); renderDashboard();
+}
+
+function deleteReminder(id){
+  const dd = state.dayData[modalDateStr];
+  if(!dd) return;
+  dd.reminders = dd.reminders.filter(r=>r.id!==id);
+  save(); renderModalContent(); renderCalendar(); renderDashboard();
+}
+
+function addReminder(){
+  const text = document.getElementById('rem-text').value.trim();
+  if(!text) return;
+  const date = document.getElementById('rem-date').value||modalDateStr;
+  if(!state.dayData) state.dayData={};
+  if(!state.dayData[modalDateStr]) state.dayData[modalDateStr]={};
+  if(!state.dayData[modalDateStr].reminders) state.dayData[modalDateStr].reminders=[];
+  state.dayData[modalDateStr].reminders.push({id:genId(),text,date,done:false});
+  save(); notify('Aviso añadido ✓'); renderModalContent(); renderCalendar(); renderDashboard();
+}
+
+function toggleTag(tag){
+  if(!state.dayData) state.dayData={};
+  if(!state.dayData[modalDateStr]) state.dayData[modalDateStr]={};
+  const tags = state.dayData[modalDateStr].tags||[];
+  state.dayData[modalDateStr].tags = tags.includes(tag)?tags.filter(t=>t!==tag):[...tags,tag];
+  save(); renderModalContent(); renderCalendar();
+  // Update modal tags row
+  const dd = state.dayData[modalDateStr]||{};
+  const isToday = new Date().toISOString().slice(0,10)===modalDateStr;
+  document.getElementById('modal-tags-row').innerHTML =
+    (isToday?`<span style="font-size:9px;background:rgba(56,189,248,.15);color:#38bdf8;border:1px solid rgba(56,189,248,.25);border-radius:4px;padding:1px 6px;">HOY</span>`:'')
+    +(dd.tags||[]).map(t=>`<span style="font-size:13px;">${t}</span>`).join('');
+}
+
+function clearTags(){
+  if(!state.dayData||!state.dayData[modalDateStr]) return;
+  state.dayData[modalDateStr].tags=[];
+  save(); renderModalContent(); renderCalendar();
+}
+
+// ─── ADD / EDIT ──────────────────────────────────────
+function selectShift(key){
+  currentShift = key;
+  document.querySelectorAll('.shift-btn').forEach((b,i)=>{
+    const keys=['day','night','full'];
+    b.classList.toggle('selected', keys[i]===key);
+    // Update hour color
+    const spans = b.querySelectorAll('span');
+    spans[3].style.color = keys[i]===key?'#38bdf8':'#3d5068';
+    spans[2].style.color = keys[i]===key?'rgba(56,189,248,.5)':'#3d5068';
+  });
+  updatePreview();
+}
+
+function updatePreview(){
+  const C = state.currency;
+  const p = document.getElementById('shift-preview');
+  if(!currentShift){ p.style.display='none'; return; }
+  const base = parseFloat(document.getElementById('form-base').value)||0;
+  const tips = parseFloat(document.getElementById('form-tips').value)||0;
+  const pb   = parseFloat(document.getElementById('form-pb').value)||0;
+  p.style.display='flex';
+  p.innerHTML = `<span>⏱ ${SHIFTS[currentShift].hours}h</span>`
+    +(base?`<span>💰 ${C}${(base+tips+pb).toFixed(2)}</span>`:`<span style="color:#3d5068;">💰 introduce sueldo →</span>`)
+    +(tips?`<span style="color:#6bcb8b;">🤑 +${C}${tips.toFixed(2)}</span>`:'')
+    +(pb?`<span style="color:#6bcb8b;">PB +${C}${pb.toFixed(2)}</span>`:'');
+}
+
+function resetForm(){
+  editId=null; currentShift=null;
+  document.getElementById('add-title').innerHTML = 'Nueva <span style="color:#38bdf8;">jornada</span>';
+  document.getElementById('submit-btn').textContent = 'Añadir jornada';
+  document.getElementById('form-date').value  = new Date().toISOString().slice(0,10);
+  document.getElementById('form-base').value  = '';
+  document.getElementById('form-tips').value  = '';
+  document.getElementById('form-pb').value    = '';
+  document.getElementById('form-notes').value = '';
+  document.querySelectorAll('.shift-btn').forEach(b=>b.classList.remove('selected'));
+  document.getElementById('shift-preview').style.display='none';
+}
+
+function cancelAdd(){ editId=null; showView('dashboard'); }
+
+function handleAddOrEdit(){
+  const date = document.getElementById('form-date').value;
+  const base = parseFloat(document.getElementById('form-base').value)||0;
+  const tips = parseFloat(document.getElementById('form-tips').value)||0;
+  const pb   = parseFloat(document.getElementById('form-pb').value)||0;
+  const notes= document.getElementById('form-notes').value;
+  if(!date||!currentShift){ notify('Selecciona fecha y turno','error'); return; }
+  if(base<=0){ notify('Introduce el sueldo del día','error'); return; }
+  const hours = SHIFTS[currentShift].hours;
+  const entry = {date,shift:currentShift,hours,earned:base+tips+pb,base,tips:tips||'',pb:pb||'',notes};
+  if(editId){
+    state.entries = state.entries.map(e=>e.id===editId?{...entry,id:editId}:e);
+    notify('Jornada actualizada ✓'); editId=null;
+  } else {
+    state.entries.unshift({...entry,id:genId()});
+    notify('Jornada añadida ✓');
+  }
+  save(); showView('dashboard');
+}
+
+// ─── HISTORY ─────────────────────────────────────────
+function renderHistory(){
+  const C = state.currency;
+  const sorted = [...state.entries].sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const hl = document.getElementById('history-list');
+  if(sorted.length===0){
+    hl.innerHTML='<div style="font-size:13px;color:#3d5068;padding:30px 0;text-align:center;">Sin jornadas todavía.</div>';
+    return;
+  }
+  hl.innerHTML = sorted.map(e=>{
+    const d=new Date(e.date+'T12:00:00');
+    return `<div class="entry-row">
+      <div style="text-align:center;min-width:36px;">
+        <div style="font-size:9px;color:#3d5068;">${WEEKDAY_ES[d.getDay()]}</div>
+        <div style="font-size:20px;color:#38bdf8;line-height:1;">${d.getDate()}</div>
+        <div style="font-size:9px;color:#3d5068;">${d.toLocaleDateString('es-ES',{month:'short'})}</div>
+      </div>
+      <div style="flex:1;">
+        <div style="display:flex;gap:7px;align-items:center;flex-wrap:wrap;margin-bottom:${e.notes?4:0}px;">
+          <span style="font-size:15px;color:#cdd6f4;">${C}${fmt(e.earned)}</span>
+          <span class="tag">${shiftLabel(e.shift)}</span>
+          ${e.tips?`<span class="tag tag-tip">+${C}${e.tips} tips</span>`:''}
+          ${e.pb?`<span class="tag tag-tip">PB ${C}${e.pb}</span>`:''}
+          <span style="font-size:10px;color:#3d5068;">${e.hours}h</span>
+        </div>
+        ${e.notes?`<div style="font-size:11px;color:#3d5068;font-style:italic;margin-top:2px;">${e.notes}</div>`:''}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn-edit" onclick="editEntry('${e.id}')">Editar</button>
+        <button class="btn-danger" id="del-${e.id}" onclick="confirmDelete('${e.id}')">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+let deleteConfirm = null;
+function confirmDelete(id){
+  if(deleteConfirm===id){
+    state.entries = state.entries.filter(e=>e.id!==id);
+    save(); notify('Jornada eliminada'); deleteConfirm=null; renderHistory();
+  } else {
+    if(deleteConfirm){ const prev=document.getElementById('del-'+deleteConfirm); if(prev) prev.textContent='✕'; }
+    deleteConfirm=id;
+    document.getElementById('del-'+id).textContent='¿Seguro?';
+  }
+}
+
+function editEntry(id){
+  const entry = state.entries.find(e=>e.id===id);
+  if(!entry) return;
+  editId=id;
+  document.getElementById('add-title').innerHTML = 'Editar jornada';
+  document.getElementById('submit-btn').textContent = 'Guardar cambios';
+  document.getElementById('form-date').value  = entry.date;
+  document.getElementById('form-base').value  = entry.base||'';
+  document.getElementById('form-tips').value  = entry.tips||'';
+  document.getElementById('form-pb').value    = entry.pb||'';
+  document.getElementById('form-notes').value = entry.notes||'';
+  selectShift(entry.shift);
+  showView('add');
+}
+
+// ─── STATS ───────────────────────────────────────────
+function getMonthly(){
+  const map={};
+  state.entries.forEach(e=>{
+    const d=new Date(e.date);
+    const key=`${d.getFullYear()}-${d.getMonth()}`;
+    if(!map[key]) map[key]={month:d.toLocaleDateString('es-ES',{month:'long',year:'numeric'}),days:0,earned:0,hours:0};
+    map[key].days++; map[key].earned+=parseFloat(e.earned)||0; map[key].hours+=parseFloat(e.hours)||0;
+  });
+  return Object.values(map).reverse();
+}
+
+function renderStats(){
+  const C = state.currency;
+  const total  = state.entries.reduce((s,e)=>s+(parseFloat(e.earned)||0),0);
+  const days   = state.entries.length;
+  const totalH = state.entries.reduce((s,e)=>s+(parseFloat(e.hours)||0),0);
+  const avg    = days?(total/days).toFixed(2):'0.00';
+  const best   = state.entries.reduce((b,e)=>(!b||parseFloat(e.earned)>parseFloat(b.earned)?e:b),null);
+  const monthly= getMonthly();
+
+  // Shift breakdown
+  document.getElementById('shift-breakdown').innerHTML = Object.entries(SHIFTS).map(([key,sh])=>{
+    const count   = state.entries.filter(e=>e.shift===key).length;
+    const subtotal= state.entries.filter(e=>e.shift===key).reduce((s,e)=>s+(parseFloat(e.earned)||0),0);
+    return `<div class="card" style="text-align:center;margin-bottom:0;">
+      <div style="font-size:20px;margin-bottom:4px;">${sh.emoji}</div>
+      <div style="font-size:20px;color:#cdd6f4;">${count}</div>
+      <div style="font-size:9px;color:#3d5068;letter-spacing:.08em;text-transform:uppercase;margin-top:2px;">${key==='day'?'Solo día':key==='night'?'Noche':'Completo'}</div>
+      <div style="font-size:10px;color:#3d5068;margin-top:2px;">${sh.hours}h · ${sh.time}</div>
+      <div style="font-size:12px;color:#38bdf8;margin-top:4px;">${C}${subtotal.toFixed(2)}</div>
+    </div>`;
+  }).join('');
+
+  // Summary
+  document.getElementById('stats-summary').innerHTML = [
+    {label:'TOTAL GANADO',value:`${C}${total.toFixed(2)}`},
+    {label:'DÍAS TRABAJADOS',value:String(days)},
+    {label:'HORAS TOTALES',value:`${totalH}h`},
+    {label:'MEDIA/JORNADA',value:`${C}${avg}`},
+  ].map(s=>`<div class="card" style="margin-bottom:0;">
+    <div class="stat-num">${s.value}</div>
+    <div class="stat-label">${s.label}</div>
+  </div>`).join('');
+
+  // Best
+  const bc = document.getElementById('best-shift-card');
+  if(best){
+    bc.innerHTML = `<div class="card" style="border-color:rgba(74,222,128,.2);background:rgba(74,222,128,.025);">
+      <div style="font-size:10px;color:#3d5068;letter-spacing:.15em;text-transform:uppercase;margin-bottom:6px;">🏆 MEJOR JORNADA</div>
+      <div style="font-size:24px;color:#cdd6f4;">${C}${fmt(best.earned)}</div>
+      <div style="font-size:11px;color:#7a8fb5;margin-top:4px;">${new Date(best.date+'T12:00:00').toLocaleDateString('es-ES',{weekday:'short',day:'2-digit',month:'short',year:'numeric'})} · ${shiftLabel(best.shift)}</div>
+      ${best.notes?`<div style="font-size:11px;color:#3d5068;margin-top:4px;">${best.notes}</div>`:''}
+    </div>`;
+  } else { bc.innerHTML=''; }
+
+  // Monthly
+  if(monthly.length===0){
+    document.getElementById('monthly-stats-list').innerHTML='<div style="font-size:13px;color:#3d5068;">Sin datos todavía</div>';
+  } else {
+    const maxE=Math.max(...monthly.map(m=>m.earned));
+    document.getElementById('monthly-stats-list').innerHTML = monthly.map(m=>`
+      <div style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+          <span style="font-size:12px;color:#7a8fb5;text-transform:capitalize;">${m.month}</span>
+          <div>
+            <span style="font-size:13px;color:#cdd6f4;">${C}${m.earned.toFixed(2)}</span>
+            <span style="font-size:10px;color:#3d5068;margin-left:10px;">${m.days}d · ${m.hours}h · avg ${(m.earned/m.days).toFixed(0)}€</span>
+          </div>
+        </div>
+        <div class="month-bar-bg"><div class="month-bar-fill" style="width:${Math.min(100,(m.earned/(maxE||1))*100)}%;"></div></div>
+      </div>`).join('');
+  }
+
+  // Currency select
+  document.getElementById('currency-select').value = state.currency;
+}
+
+function changeCurrency(v){ state.currency=v; save(); renderDashboard(); renderStats(); }
+function clearAllData(){ if(window.confirm('¿Borrar todos los datos? No hay vuelta atrás.')){ state={entries:[],dayData:{},currency:'€'}; save(); notify('Datos borrados','error'); renderDashboard(); renderStats(); }}
+
+// ─── INIT ────────────────────────────────────────────
+load();
+renderDashboard();
+</script>
+</body>
+</html>
